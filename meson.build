@@ -77,6 +77,7 @@ if _drivers.contains('rift')
 		'src/drv_oculus_rift/rift.c',
 		'src/drv_oculus_rift/rift-hmd-radio.c',
 		'src/drv_oculus_rift/packet.c',
+		'src/ext_deps/nxjson.c',
 	]
 	c_args += '-DDRIVER_OCULUS_RIFT'
 	deps += dep_hidapi

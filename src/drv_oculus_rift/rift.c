@@ -77,7 +77,8 @@ typedef enum {
 	REV_DK2,
 	REV_CV1,
 
-	REV_GEARVR_GEN1
+	REV_GEARVR_GEN1,
+	REV_VIULUX_V9S
 } rift_revision;
 
 typedef struct {
@@ -918,6 +919,11 @@ static rift_hmd_t *open_hmd(ohmd_driver* driver, ohmd_device_desc* desc)
 
 	//setup generic distortion coeffs, from hand-calibration
 	switch (desc->revision) {
+		case REV_VIULUX_V9S:
+			printf("fdfd\n");
+			ohmd_set_universal_distortion_k(&(hmd_dev->base.properties), 0.247, -0.145, 0.103, 0.795);
+			ohmd_set_universal_aberration_k(&(hmd_dev->base.properties), 0.98790, 0.99500, 1.00100);
+			break;
 		case REV_DK2:
 			ohmd_set_universal_distortion_k(&(hmd_dev->base.properties), 0.247, -0.145, 0.103, 0.795);
 			ohmd_set_universal_aberration_k(&(hmd_dev->base.properties), 0.985, 1.000, 1.015);
@@ -1056,12 +1062,11 @@ static ohmd_device* open_device(ohmd_driver* driver, ohmd_device_desc* desc)
 	return &dev->base;
 }
 
-#define RIFT_ID_COUNT 5
+#define RIFT_ID_COUNT 6
 
 static void get_device_list(ohmd_driver* driver, ohmd_device_list* list)
 {
 	// enumerate HID devices and add any Rifts found to the device list
-
 	rift_devices rd[RIFT_ID_COUNT] = {
 		{ "Rift (DK1)", OCULUS_VR_INC_ID, 0x0001,	-1, REV_DK1 },
 		{ "Rift (DK2)", OCULUS_VR_INC_ID, 0x0021,	-1, REV_DK2 },
@@ -1069,6 +1074,7 @@ static void get_device_list(ohmd_driver* driver, ohmd_device_list* list)
 		{ "Rift (CV1)", OCULUS_VR_INC_ID, RIFT_CV1_PID,	 0, REV_CV1 },
 
 		{ "GearVR (Gen1)", SAMSUNG_ELECTRONICS_CO_ID, 0xa500,	 0, REV_GEARVR_GEN1 },
+		{ "Viulux v9s", OCULUS_VR_INC_ID, 0x0005, 0, REV_VIULUX_V9S},
 	};
 
 	for(int i = 0; i < RIFT_ID_COUNT; i++){
@@ -1140,6 +1146,24 @@ static void get_device_list(ohmd_driver* driver, ohmd_device_list* list)
 					desc->driver_ptr = driver;
 					desc->id = id++;
 				}
+			} else if (ohmd_wstring_match(cur_dev->manufacturer_string, L"Inlife 3D, Inc.") &&
+				(rd[i].iface == -1 || cur_dev->interface_number == rd[i].iface)) {
+				int id = 0;
+				ohmd_device_desc* desc = &list->devices[list->num_devices++];
+
+				strcpy(desc->driver, "OpenHMD Rift Driver");
+				strcpy(desc->vendor, "Oculus VR, Inc.");
+				strcpy(desc->product, rd[i].name);
+
+				desc->revision = rd[i].rev;
+
+				desc->device_class = OHMD_DEVICE_CLASS_HMD;
+				desc->device_flags = OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING;
+
+				strcpy(desc->path, cur_dev->path);
+
+				desc->driver_ptr = driver;
+				desc->id = id++;
 			}
 			cur_dev = cur_dev->next;
 		}
